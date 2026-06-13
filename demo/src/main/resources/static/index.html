@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque Automotivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">🚗 Gestão de Estoque de Veículos</h1>
+
+    <div class="row mb-4 justify-content-between align-items-end">
+        <div class="col-md-4">
+            <label for="filtroStatus" class="form-label fw-bold">Filtrar por Status:</label>
+            <select id="filtroStatus" class="form-select shadow-sm" onchange="carregarVeiculos()">
+                <option value="Todos">Todos os Veículos</option>
+                <option value="Disponivel">Apenas Disponíveis</option>
+                <option value="Vendido">Apenas Vendidos</option>
+            </select>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-success shadow-sm" onclick="abrirModalCadastro()">
+                ➕ Cadastrar Novo Veículo
+            </button>
+        </div>
+    </div>
+
+    <div class="row" id="lista-veiculos">
+    </div>
+</div>
+
+<div class="modal fade" id="modalCadastrar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">➕ Cadastrar Novo Veículo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="cadMarca" class="form-label">Marca</label>
+                        <select class="form-select" id="cadMarca"></select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="cadModelo" class="form-label">Modelo</label>
+                        <select class="form-select" id="cadModelo"></select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="cadAno" class="form-label">Ano</label>
+                        <input type="number" class="form-control" id="cadAno" placeholder="Ex: 2024">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="cadCor" class="form-label">Cor</label>
+                        <input type="text" class="form-control" id="cadCor" placeholder="Ex: Prata">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="cadPreco" class="form-label">Preço (R$)</label>
+                    <input type="number" class="form-control" id="cadPreco" step="0.01">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="cadKm" class="form-label">Quilometragem</label>
+                        <input type="number" class="form-control" id="cadKm" value="0">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="cadStatus" class="form-label">Status</label>
+                        <select class="form-select" id="cadStatus">
+                            <option value="Disponivel">Disponível</option>
+                            <option value="Vendido">Vendido</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="salvarNovoVeiculo()">Salvar Veículo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">✏️ Editar Veículo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="mb-3">
+                    <label for="editPreco" class="form-label">Preço (R$)</label>
+                    <input type="number" class="form-control" id="editPreco" step="0.01">
+                </div>
+                <div class="mb-3">
+                    <label for="editKm" class="form-label">Quilometragem</label>
+                    <input type="number" class="form-control" id="editKm">
+                </div>
+                <div class="mb-3">
+                    <label for="editStatus" class="form-label">Status</label>
+                    <select class="form-select" id="editStatus">
+                        <option value="Disponivel">Disponível</option>
+                        <option value="Vendido">Vendido</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarEdicao()">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // === 1. LISTAR VEÍCULOS ===
+    async function carregarVeiculos() {
+        try {
+            const statusSelecionado = document.getElementById('filtroStatus').value;
+            let url = '/api/veiculos';
+
+            if (statusSelecionado !== 'Todos') {
+                url = `/api/veiculos/filtro/status/${statusSelecionado}`;
+            }
+
+            const resposta = await fetch(url);
+            const veiculos = await resposta.json();
+
+            const divLista = document.getElementById('lista-veiculos');
+            divLista.innerHTML = '';
+
+            veiculos.forEach(carro => {
+                const badgeStatus = (carro.status === 'Disponivel' || carro.status === 'Disponível') ? 'bg-success' : 'bg-secondary';
+
+                // Proteções contra dados vazios
+                const nomeModelo = carro.modelo?.nome || 'Modelo não definido';
+                const nomeMarca = carro.marca?.nome || 'Marca não definida';
+                const precoCarro = carro.preco || 0;
+                const kmCarro = carro.quilometragem || 0;
+                const anoCarro = carro.ano || 'N/D';
+                const corCarro = carro.cor || 'N/D';
+                const statusCarro = carro.status || 'Indefinido';
+
+                const card = `
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow h-100 border-0">
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold">${nomeModelo} <span class="badge ${badgeStatus} float-end">${statusCarro}</span></h5>
+                                <h6 class="card-subtitle mb-3 text-muted">Marca: ${nomeMarca}</h6>
+                                <hr>
+                                <p class="card-text">
+                                    <strong>Ano:</strong> ${anoCarro} <br>
+                                    <strong>Cor:</strong> ${corCarro} <br>
+                                    <strong>Km:</strong> ${kmCarro} km
+                                </p>
+                                <h4 class="text-success mb-3 fw-bold">R$ ${precoCarro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h4>
+
+                                <button class="btn btn-outline-primary btn-sm w-100 mb-2"
+                                    onclick="abrirModalEdicao(${carro.id}, ${precoCarro}, ${kmCarro}, '${statusCarro}')">
+                                    ✏️ Editar Informações
+                                </button>
+
+                                <button class="btn btn-outline-danger btn-sm w-100" onclick="deletarVeiculo(${carro.id})">
+                                    🗑️ Excluir do Estoque
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                divLista.innerHTML += card;
+            });
+        } catch (erro) {
+            console.error("Erro ao buscar veículos:", erro);
+        }
+    }
+
+    // === 2. CADASTRAR VEÍCULO ===
+    async function carregarMarcasEModelos() {
+        try {
+            const respMarcas = await fetch('/api/marcas');
+            const marcas = await respMarcas.json();
+            const selectMarca = document.getElementById('cadMarca');
+            selectMarca.innerHTML = '';
+            marcas.forEach(m => selectMarca.innerHTML += `<option value="${m.id}">${m.nome}</option>`);
+
+            const respModelos = await fetch('/api/modelos');
+            const modelos = await respModelos.json();
+            const selectModelo = document.getElementById('cadModelo');
+            selectModelo.innerHTML = '';
+            modelos.forEach(m => selectModelo.innerHTML += `<option value="${m.id}">${m.nome}</option>`);
+        } catch (erro) {
+            console.error("Erro ao carregar marcas/modelos:", erro);
+        }
+    }
+
+    async function abrirModalCadastro() {
+        await carregarMarcasEModelos();
+        document.getElementById('cadAno').value = '';
+        document.getElementById('cadCor').value = '';
+        document.getElementById('cadPreco').value = '';
+        document.getElementById('cadKm').value = '0';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalCadastrar'));
+        modal.show();
+    }
+
+    async function salvarNovoVeiculo() {
+        const novoVeiculo = {
+            ano: parseInt(document.getElementById('cadAno').value) || 0,
+            cor: document.getElementById('cadCor').value,
+            preco: parseFloat(document.getElementById('cadPreco').value) || 0,
+            quilometragem: parseInt(document.getElementById('cadKm').value) || 0,
+            status: document.getElementById('cadStatus').value,
+            marca: { id: parseInt(document.getElementById('cadMarca').value) },
+            modelo: { id: parseInt(document.getElementById('cadModelo').value) }
+        };
+
+        try {
+            const resposta = await fetch('/api/veiculos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(novoVeiculo)
+            });
+
+            if (resposta.ok) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastrar'));
+                modal.hide();
+                carregarVeiculos();
+            } else {
+                alert("Erro ao cadastrar o veículo.");
+            }
+        } catch (erro) {
+            console.error("Erro ao cadastrar:", erro);
+        }
+    }
+
+    // === 3. EDITAR VEÍCULO ===
+    function abrirModalEdicao(id, preco, km, status) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editPreco').value = preco;
+        document.getElementById('editKm').value = km;
+        const statusSemAcento = status === 'Disponível' ? 'Disponivel' : status;
+        document.getElementById('editStatus').value = statusSemAcento;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modal.show();
+    }
+
+    async function salvarEdicao() {
+        const id = document.getElementById('editId').value;
+        const veiculoAtualizado = {
+            preco: parseFloat(document.getElementById('editPreco').value) || 0,
+            quilometragem: parseInt(document.getElementById('editKm').value) || 0,
+            status: document.getElementById('editStatus').value
+        };
+
+        try {
+            const resposta = await fetch(`/api/veiculos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(veiculoAtualizado)
+            });
+
+            if (resposta.ok) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
+                modal.hide();
+                carregarVeiculos();
+            } else {
+                alert("Erro ao atualizar o veículo.");
+            }
+        } catch (erro) {
+            console.error("Erro ao salvar:", erro);
+        }
+    }
+
+    // === 4. DELETAR VEÍCULO ===
+    async function deletarVeiculo(id) {
+        if(confirm("Tem certeza que deseja remover este veículo do estoque?")) {
+            try {
+                const resposta = await fetch(`/api/veiculos/${id}`, { method: 'DELETE' });
+                if (resposta.ok) carregarVeiculos();
+                else alert("Erro ao excluir o veículo.");
+            } catch (erro) {
+                console.error("Erro ao deletar:", erro);
+            }
+        }
+    }
+
+    // Inicia a aplicação
+    carregarVeiculos();
+</script>
+
+</body>
+</html>
