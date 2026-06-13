@@ -20,7 +20,7 @@ O sistema foi construído sob a arquitetura RESTful, aplicando os pilares de POO
 * **IDE:** IntelliJ IDEA
 
 ## 🚀 Como executar o projeto na sua máquina
-1. Clone este repositório: `git clone [COLE SEU LINK DO GITHUB AQUI]`
+1. Clone este repositório: `git clone https://github.com/leobrboy/Sistema-de-gestao.git`
 2. Abra o MySQL e crie o banco de dados.
 3. Abra o projeto no IntelliJ IDEA.
 4. No arquivo `application.properties`, ajuste a senha do banco de dados para a da sua máquina local.
